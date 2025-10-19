@@ -1,0 +1,201 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="image/favicon.ico">
+<title>20 tháng 10</title>
+<link rel="stylesheet" type="text/css" href="./renxi/default.css">
+<script src="./renxi/jquery.min.js"></script>
+<script src="./renxi/jscex.min.js"></script>
+<script src="./renxi/jscex-parser.js"></script>
+<script src="./renxi/jscex-jit.js"></script>
+<script src="./renxi/jscex-builderbase.min.js"></script>
+<script src="./renxi/jscex-async.min.js"></script>
+<script src="./renxi/jscex-async-powerpack.min.js"></script>
+<script src="./renxi/functions.js" charset="utf-8"></script>
+<script src="./renxi/love.js" charset="utf-8"></script>
+<style>
+/* --- Màn hình mở đầu --- */
+#start-screen {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(255, 192, 203, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  z-index: 9999;
+}
+#start-button {
+  font-size: 50px;
+  color: #e60073;
+  font-weight: bold;
+  cursor: pointer;
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); color: #ff0066; }
+  100% { transform: scale(1); }
+}
+</style>
+</head>
+<body>
+
+<!-- Giao diện mở đầu -->
+<div id="start-screen">
+  <div id="start-button">COME BABY 💞</div>
+</div>
+
+<!-- Nhạc -->
+<audio id="bgmusic" loop>
+  <source src="music/hihi.mp3" type="audio/mp3">
+</audio>
+
+<div id="main" style="display:none;">
+  <div id="error">Trình duyệt của bạn không được hỗ trợ.</div>
+  <div id="wrap">
+    <div id="text" style="font-family:'Gill Sans MT';">
+      <div id="code">
+        <span class="say">Xin chào!</span><br>
+        <span class="say">Nhân ngày Phụ nữ Việt Nam 20/10...</span><br>
+        <span class="say">Chúc bạn luôn xinh đẹp và hạnh phúc 💐💖</span><br>
+        <span class="say"><img width="100" height="100" src="image/tym.png"><br>--Xuan Truongggg--</span>
+      </div>
+    </div>
+    <div id="clock-box"><div id="clock"></div></div>
+    <canvas id="canvas" width="1100" height="680"></canvas>
+  </div>
+</div>
+
+<script>
+let started = false;
+document.getElementById("start-button").addEventListener("click", function() {
+  if (started) return;
+  started = true;
+
+  // Ẩn màn hình mở đầu, hiện cây
+  $("#start-screen").fadeOut(1000);
+  $("#main").fadeIn(1500);
+
+  // Phát nhạc
+  const music = document.getElementById("bgmusic");
+  music.play();
+
+  // Chạy hiệu ứng cây
+  startTree();
+});
+
+function startTree() {
+  var canvas = $('#canvas');
+  if (!canvas[0].getContext) {
+      $("#error").show();
+      return false;
+  }
+
+  var width = canvas.width();
+  var height = canvas.height();        
+  canvas.attr("width", width);
+  canvas.attr("height", height);
+  var opts = {
+      seed: {x: width/2 - 20, color: "rgb(190, 26, 37)", scale: 2},
+      branch: [
+          [535,680,570,250,500,200,30,100,[
+              [540,500,455,417,340,400,13,100,[
+                  [450,435,434,430,394,395,2,40]
+              ]],
+              [550,445,600,356,680,345,12,100,[
+                  [578,400,648,409,661,426,3,80]
+              ]],
+              [539,281,537,248,534,217,3,40],
+              [546,397,413,247,328,244,9,80,[
+                  [427,286,383,253,371,205,2,40],
+                  [498,345,435,315,395,330,4,60]
+              ]],
+              [546,357,608,252,678,221,6,100,[
+                  [590,293,646,277,648,271,2,80]
+              ]]
+          ]]
+      ],
+      bloom: {num:700,width:1080,height:650},
+      footer: {width:1200,height:5,speed:10}
+  }
+
+  var tree = new Tree(canvas[0], width, height, opts);
+  var seed = tree.seed;
+  var foot = tree.footer;
+  var hold = 0;
+
+  var seedAnimate = eval(Jscex.compile("async", function () {
+      seed.draw();
+      while (seed.canScale()) {
+          seed.scale(0.95);
+          $await(Jscex.Async.sleep(10));
+      }
+      while (seed.canMove()) {
+          seed.move(0, 2);
+          foot.draw();
+          $await(Jscex.Async.sleep(10));
+      }
+  }));
+
+  var growAnimate = eval(Jscex.compile("async", function () {
+      do {
+          tree.grow();
+          $await(Jscex.Async.sleep(10));
+      } while (tree.canGrow());
+  }));
+
+  var flowAnimate = eval(Jscex.compile("async", function () {
+      do {
+          tree.flower(2);
+          $await(Jscex.Async.sleep(10));
+      } while (tree.canFlower());
+  }));
+
+  var moveAnimate = eval(Jscex.compile("async", function () {
+      tree.snapshot("p1", 240, 0, 610, 680);
+      while (tree.move("p1", 500, 0)) {
+          foot.draw();
+          $await(Jscex.Async.sleep(10));
+      }
+      foot.draw();
+      tree.snapshot("p2", 500, 0, 610, 680);
+      canvas.parent().css("background", "url(" + tree.toDataURL('image/png') + ")");
+      canvas.css("background", "#ffe");
+      $await(Jscex.Async.sleep(300));
+      canvas.css("background", "none");
+  }));
+
+  var jumpAnimate = eval(Jscex.compile("async", function () {
+      while (true) {
+          tree.ctx.clearRect(0,0,width,height);
+          tree.jump();
+          foot.draw();
+          $await(Jscex.Async.sleep(25));
+      }
+  }));
+
+  var textAnimate = eval(Jscex.compile("async", function () {
+      $("#code").show().typewriter();
+      $("#clock-box").fadeIn(500);
+  }));
+
+  var runAsync = eval(Jscex.compile("async", function () {
+      $await(seedAnimate());
+      $await(growAnimate());
+      $await(flowAnimate());
+      $await(moveAnimate());
+      textAnimate().start();
+      // Chờ thêm 6 giây để chữ hiện xong rồi chuyển sang TikTok
+      $await(Jscex.Async.sleep(12000));
+      window.location.href = "https://www.tiktok.com/@xtruow";
+      $await(jumpAnimate());
+  }));
+
+  runAsync().start();
+}
+</script>
+</body>
+</html>
